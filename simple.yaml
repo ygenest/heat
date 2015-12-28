@@ -1,0 +1,51 @@
+heat_template_version: 2015-04-30
+
+description: Simple template to deploy a single compute instance
+
+parameters:
+  instance_type:
+    type: string
+    label: Instance Type
+    description: Instance type for compute instances
+    constraints:
+      - allowed_values:
+        - m1.small
+        - m1.medium
+        - m1.large
+  dir_name:
+    type: string
+    label: Repertoire a creer
+    description: Nom du repertoire a creer
+
+
+resources:
+  inst1:
+    type: OS::Nova::Server
+    properties:
+      key_name: ygenest
+      image: cirros-0.3.4-x86_64-uec
+      flavor: { get_param: instance_type}
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/sh
+            echo "Creation du repertoire",$dir_name
+            sudo mkdir $dir_name
+          params:
+            $dir_name: { get_param: dir_name }
+
+  floating_ip:
+     type: OS::Nova::FloatingIP
+     properties:
+       pool: public
+
+  association:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: floating_ip }
+      server_id: { get_resource: inst1}
+
+outputs:
+  instance_ip:
+    description: IP address of the deployed compute instance
+    value: { get_attr: [inst1, first_address] }

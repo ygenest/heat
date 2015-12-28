@@ -23,14 +23,14 @@ resources:
     type: OS::Nova::Server
     properties:
       key_name: ygenest
-      image: cirros-0.3.4-x86_64-uec
+      image: CentOS-7-x86_64
       flavor: { get_param: instance_type}
       user_data:
         str_replace:
           template: |
             #!/bin/sh
             echo "Creation du repertoire",$dir_name
-            sudo mkdir $dir_name
+            mkdir $dir_name
           params:
             $dir_name: { get_param: dir_name }
 

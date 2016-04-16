@@ -1,0 +1,24 @@
+heat_template_version: 2015-04-30
+
+description: Template to deploy Rundeck on Ubuntu 12.04
+
+
+resources:
+  rundeck:
+    type: OS::Nova::Server
+    properties:
+      image: Ubuntu 12.04
+      flavor: ds2G
+      key_name: rundeck
+      user_data: | 
+        #!/bin/sh
+        echo "Updating Linux"
+        sudo apt-get update
+        echo "Installing Java 7"
+        sudo apt-get purge openjdk*
+        sudo apt-get -y install openjdk-7-jre
+        echo "Downloading rundeck..."
+        sudo wget http://dl.bintray.com/rundeck/rundeck-deb/rundeck-2.6.4-1-GA.deb
+        echo "Installing rundeck"
+        dpkg -i rundeck-2.6.4-1-GA.deb
+      user_data_format: RAW

@@ -1,0 +1,90 @@
+heat_template_version: 2015-04-30
+
+description: Simple template to deploy a single compute instance
+
+parameters:
+  instance_type:
+    type: string
+    label: Instance Type
+    description: Instance type for compute instances
+    default: m1.small
+    constraints:
+      - allowed_values:
+        - m1.small
+        - m1.medium
+        - m1.large
+  admin_name:
+    type: string
+    label: Admin user to create
+    description: enter a name for the user
+    default: ygenest
+  admin_pass:
+    type: string
+    label: Password for admin user
+    description: Enter password for admin user
+    default: admsys
+    hidden: true
+
+
+resources:
+  jboss_secgroup:
+    type: AWS::EC2::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+          port_range_min: 80
+          port_range_max: 80
+        - protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+          port_range_min: 9991
+          port_range_max: 9991
+  inst1:
+    type: OS::Nova::Server
+    properties:
+      key_name: ygenest
+      image: CentOS-7-x86_64-GenericCloud-1503
+      flavor: { get_param: instance_type}
+      security_groups:
+        - Jboss_secgroup
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/sh -ex
+            yum -y install java-1.7.0-openjdk-devel
+            yum -y install wget
+            wget http://download.jboss.org/jbossas/7.1/jboss-as-7.1.1.Final/jboss-as-7.1.1.Final.zip
+            yum -y install unzip
+            unzip jboss-as-7.1.1.Final.zip -d /usr/share
+            cd /usr/share/jboss-as-7.1.1.Final/bin/
+            ./add-user.sh --silent=true $admin_name $admin_pass        
+            #wget http://192.168.2.30:8081/content/repositories/thirdparty//com/oracle/insbridge/IBSS/5.0.0/IBSS-5.0.0.ear
+            #wget http://192.168.2.30:8081/content/repositories/thirdparty//com/oracle/insbridge/IBSS/5.0.0/IBSS-5.0.0.xml
+            #mv IBSS-5.0.0.ear /usr/share/jboss-as-7.1.1.Final/standalone/deployments
+            #mv IBSS-5.0.0.xml /opt/insbridge.net.softraterconfig.xml
+            #sed -i '1 a JAVA_OPTS="$JAVA_OPTS -DINSBRIDGE_APP_DIR=/opt"' /usr/share/jboss-as-7.1.1.Final/bin/standalone.sh
+            #sed -i '2 a JAVA_OPTS="$JAVA_OPTS -DINSBRIDGE_INSTANCE_APP_DIR=/opt/instance"' 
+            #sed -i 's/scan-interval="5000"/deployment-timeout="300" scan-interval="5000"/g' #/usr/share/jboss-as-7.1.1.Final/standalone/configuration/standalone.xml
+            #/usr/share/jboss-as-7.1.1.Final/bin/standalone.sh
+            ./standalone.sh -Djboss.bind.address=0.0.0.0 -Djboss.bind.address.management=0.0.0.0& 
+            echo "YG002 JBoss server up and running"
+            
+          params:
+            $admin_name: { get_param: admin_name }
+            $admin_pass: { get_param: admin_pass }
+
+  floating_ip:
+     type: OS::Nova::FloatingIP
+     properties:
+       pool: public
+
+  association:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: floating_ip }
+      server_id: { get_resource: inst1}
+
+outputs:
+  instance_ip:
+    description: IP address of the deployed compute instance
+    value: { get_attr: [inst1, first_address] }

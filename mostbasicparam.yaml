@@ -1,0 +1,34 @@
+heat_template_version: 2015-04-30
+
+description: Simple template to deploy a single compute instance
+
+parameter_groups:
+- label: Enter the following values:Instance type, Key name
+  description: basic parameters
+  parameters:
+  - flavor
+  - keyname
+
+parameters:
+  flavor:
+    type: string
+    label: instance type
+    description: Type of instance (flavor) to be used
+
+  keyname:
+    type: string
+    label: Key Name
+    description: The Key pair to use
+
+resources:
+  instA:
+    type: OS::Nova::Server
+    properties:
+      image: CentOS-7-x86_64-GenericCloud-1503
+      flavor: {get_param: flavor}
+      key_name: {get_param: keyname}
+
+outputs:
+  ip_address:
+    description: The IP address of the VM
+    value: { get_attr: [instA, first_address] }

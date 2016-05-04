@@ -1,0 +1,11 @@
+heat_template_version: 2015-04-30
+
+description: Simple template to deploy a single compute instance
+
+resources:
+  instA:
+    type: OS::Nova::Server
+    properties:
+      image: CentOS-7-x86_64-GenericCloud-1503
+      flavor: m1.small
+      key_name: ygenest
